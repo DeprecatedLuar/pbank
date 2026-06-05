@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 )
@@ -47,24 +46,8 @@ func main() {
 		txList(db, os.Args[2:])
 	case "edit":
 		txEdit(db, os.Args[2:])
-	case "sub":
-		if len(os.Args) < 3 {
-			showHelp([]string{"help", "sub"})
-			os.Exit(1)
-		}
-		handleSubscription(db, os.Args[2:])
-	case "cron":
-		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: pbank cron daily")
-			os.Exit(1)
-		}
-		handleCron(db, os.Args[2:])
-	case "report":
-		if len(os.Args) < 3 {
-			showHelp([]string{"help", "report"})
-			os.Exit(1)
-		}
-		handleReport(db, os.Args[2:])
+	case "balance":
+		handleBalance(db, os.Args[2:])
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
 		showHelp([]string{})
@@ -72,17 +55,3 @@ func main() {
 	}
 }
 
-func handleSubscription(db *sql.DB, args []string) {
-	fmt.Fprintln(os.Stderr, "Not implemented yet")
-	os.Exit(1)
-}
-
-func handleCron(db *sql.DB, args []string) {
-	fmt.Fprintln(os.Stderr, "Not implemented yet")
-	os.Exit(1)
-}
-
-func handleReport(db *sql.DB, args []string) {
-	fmt.Fprintln(os.Stderr, "Not implemented yet")
-	os.Exit(1)
-}

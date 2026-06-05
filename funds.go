@@ -119,3 +119,46 @@ func fundList(db *sql.DB) {
 		fmt.Println("No funds found")
 	}
 }
+
+func handleBalance(db *sql.DB, args []string) {
+	rows, err := db.Query(`
+		SELECT f.label, fb.currency, fb.amount
+		FROM fund_balances fb
+		JOIN funds f ON fb.fund_id = f.id
+		ORDER BY f.label, fb.currency
+	`)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	defer rows.Close()
+
+	currentFund := ""
+	hasBalances := false
+
+	for rows.Next() {
+		var fund, currency string
+		var amount float64
+
+		if err := rows.Scan(&fund, &currency, &amount); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		hasBalances = true
+
+		if fund != currentFund {
+			if currentFund != "" {
+				fmt.Println()
+			}
+			fmt.Printf("%s:\n", fund)
+			currentFund = fund
+		}
+
+		fmt.Printf("  %s: %.2f\n", currency, amount)
+	}
+
+	if !hasBalances {
+		fmt.Println("No balances found")
+	}
+}

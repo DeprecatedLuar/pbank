@@ -13,16 +13,15 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("deduct", "Deduct money from a fund", "pbank deduct wallet USD 25 'Groceries' --category food"),
 			gohelp.Item("list", "List transactions with optional filters", "pbank list --fund wallet --since 2026-05-01"),
 			gohelp.Item("edit", "Edit a transaction field", "pbank edit 42 category groceries"),
-			gohelp.Item("sub", "Manage recurring subscriptions", "pbank sub list"),
-			gohelp.Item("cron", "Run scheduled tasks (e.g., subscription billing)", "pbank cron daily"),
-			gohelp.Item("report", "Generate financial reports", "pbank report monthly"),
+			gohelp.Item("balance", "Show current balances for all funds", "pbank balance"),
 		).
 		Section("Global Options",
 			gohelp.Item("help", "Show help for any command", "pbank help fund"),
 			gohelp.Item("help --all", "Show all help topics at once"),
 		).
 		Text("All commands support multi-currency tracking. Currencies are stored as 3-letter codes (USD, EUR, BTC, etc.).").
-		Text("Data is stored in finances.db (SQLite) in the current directory.")
+		Text("Data is stored in finances.db (SQLite) in the current directory.").
+		Text("For recurring bills, use external cron jobs to call 'pbank deduct' commands.")
 
 	fund := gohelp.NewPage("fund", "manage funds (accounts, wallets, savings, etc.)").
 		Usage("pbank fund <subcommand> [args]").
@@ -55,27 +54,30 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 		).
 		Text("Filters can be combined: pbank list --fund wallet --currency USD --since 2026-01-01")
 
-	sub := gohelp.NewPage("sub", "manage recurring subscriptions").
-		Usage("pbank sub <subcommand> [args]").
-		Section("Subcommands",
-			gohelp.Item("add", "Add a new subscription (not implemented yet)"),
-			gohelp.Item("list", "List all active subscriptions (not implemented yet)"),
-			gohelp.Item("pause", "Temporarily pause a subscription (not implemented yet)"),
-			gohelp.Item("resume", "Resume a paused subscription (not implemented yet)"),
-			gohelp.Item("cancel", "Cancel a subscription permanently (not implemented yet)"),
+	balance := gohelp.NewPage("balance", "view current balances").
+		Usage("pbank balance").
+		Text("Shows current balances for all funds, grouped by fund and currency.").
+		Section("Example Output",
+			gohelp.Item("Wise:", ""),
+			gohelp.Item("  USD: 450.00", ""),
+			gohelp.Item("  EUR: 200.00", ""),
+			gohelp.Item("OCBC:", ""),
+			gohelp.Item("  SGD: 5,000.00", ""),
 		).
-		Text("Subscriptions automatically create deduction transactions on their billing cycle.").
-		Text("Run 'pbank cron daily' in a cron job to process subscriptions.")
+		Text("Balances are calculated from all transactions. Use 'pbank list' to see transaction history.")
 
-	report := gohelp.NewPage("report", "generate financial reports").
-		Usage("pbank report <type> [options]").
-		Section("Report Types",
-			gohelp.Item("monthly", "Show income/expense breakdown by month (not implemented yet)"),
-			gohelp.Item("networth", "Calculate total net worth across all funds and currencies (not implemented yet)"),
+	edit := gohelp.NewPage("edit", "edit transaction fields").
+		Usage("pbank edit <id> <field> <value>").
+		Section("Fields",
+			gohelp.Item("title", "Transaction description", "pbank edit 5 title 'Updated description'"),
+			gohelp.Item("amount", "Transaction amount (recalculates fund balance)", "pbank edit 5 amount -75.00"),
+			gohelp.Item("category", "Transaction category", "pbank edit 5 category food"),
+			gohelp.Item("notes", "Additional notes", "pbank edit 5 notes 'Paid via credit card'"),
+			gohelp.Item("date", "Transaction date (YYYY-MM-DD)", "pbank edit 5 date 2026-05-15"),
 		).
-		Text("Reports aggregate your transaction data to provide financial insights.")
+		Text("When editing amount, fund balance is automatically recalculated.")
 
-	return root, []*gohelp.Page{fund, transactions, sub, report}
+	return root, []*gohelp.Page{fund, transactions, balance, edit}
 }
 
 func showHelp(args []string) {

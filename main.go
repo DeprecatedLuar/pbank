@@ -1,14 +1,23 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		printUsage()
+		showHelp([]string{})
 		os.Exit(1)
+	}
+
+	cmd := os.Args[1]
+
+	// Handle help command
+	if cmd == "help" || cmd == "--help" || cmd == "-h" {
+		showHelp(os.Args[1:])
+		return
 	}
 
 	db, err := openDB()
@@ -23,12 +32,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	cmd := os.Args[1]
-
 	switch cmd {
 	case "fund":
 		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: pbank fund <add|rm|list>")
+			showHelp([]string{"help", "fund"})
 			os.Exit(1)
 		}
 		handleFund(db, os.Args[2:])
@@ -36,15 +43,13 @@ func main() {
 		handleAdd(db, os.Args[2:])
 	case "deduct":
 		handleDeduct(db, os.Args[2:])
-	case "tx":
-		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: pbank tx <list|edit>")
-			os.Exit(1)
-		}
-		handleTransaction(db, os.Args[2:])
+	case "list":
+		txList(db, os.Args[2:])
+	case "edit":
+		txEdit(db, os.Args[2:])
 	case "sub":
 		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: pbank sub <add|list|pause|resume|cancel>")
+			showHelp([]string{"help", "sub"})
 			os.Exit(1)
 		}
 		handleSubscription(db, os.Args[2:])
@@ -56,61 +61,28 @@ func main() {
 		handleCron(db, os.Args[2:])
 	case "report":
 		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: pbank report <monthly|networth>")
+			showHelp([]string{"help", "report"})
 			os.Exit(1)
 		}
 		handleReport(db, os.Args[2:])
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
-		printUsage()
+		showHelp([]string{})
 		os.Exit(1)
 	}
 }
 
-func printUsage() {
-	fmt.Println("Usage: pbank <command> [args]")
-	fmt.Println()
-	fmt.Println("Commands:")
-	fmt.Println("  fund <add|rm|list>    Manage funds")
-	fmt.Println("  add <fund> <curr> <amt> <title> [--category X] [--notes \"...\"]")
-	fmt.Println("  deduct <fund> <curr> <amt> <title> [--category X] [--notes \"...\"]")
-	fmt.Println("  tx <list|edit>        View/edit transactions")
-	fmt.Println("  sub <add|list|...>    Manage subscriptions")
-	fmt.Println("  cron daily            Run daily subscription billing")
-	fmt.Println("  report <monthly|networth>")
-}
-
-func handleFund(db interface{}, args []string) {
+func handleSubscription(db *sql.DB, args []string) {
 	fmt.Fprintln(os.Stderr, "Not implemented yet")
 	os.Exit(1)
 }
 
-func handleAdd(db interface{}, args []string) {
+func handleCron(db *sql.DB, args []string) {
 	fmt.Fprintln(os.Stderr, "Not implemented yet")
 	os.Exit(1)
 }
 
-func handleDeduct(db interface{}, args []string) {
-	fmt.Fprintln(os.Stderr, "Not implemented yet")
-	os.Exit(1)
-}
-
-func handleTransaction(db interface{}, args []string) {
-	fmt.Fprintln(os.Stderr, "Not implemented yet")
-	os.Exit(1)
-}
-
-func handleSubscription(db interface{}, args []string) {
-	fmt.Fprintln(os.Stderr, "Not implemented yet")
-	os.Exit(1)
-}
-
-func handleCron(db interface{}, args []string) {
-	fmt.Fprintln(os.Stderr, "Not implemented yet")
-	os.Exit(1)
-}
-
-func handleReport(db interface{}, args []string) {
+func handleReport(db *sql.DB, args []string) {
 	fmt.Fprintln(os.Stderr, "Not implemented yet")
 	os.Exit(1)
 }

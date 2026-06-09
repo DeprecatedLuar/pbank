@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	gohelp "github.com/DeprecatedLuar/gohelp-luar"
@@ -14,6 +14,7 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("list", "List transactions with optional filters", "pbank list --fund wallet --since 2026-05-01"),
 			gohelp.Item("edit", "Edit a transaction field", "pbank edit 42 category groceries"),
 			gohelp.Item("balance", "Show current balances for all funds", "pbank balance"),
+			gohelp.Item("value", "Show current value of all balances in BRL", "pbank value"),
 		).
 		Section("Global Options",
 			gohelp.Item("help", "Show help for any command", "pbank help fund"),
@@ -77,10 +78,21 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 		).
 		Text("When editing amount, fund balance is automatically recalculated.")
 
-	return root, []*gohelp.Page{fund, transactions, balance, edit}
+	value := gohelp.NewPage("value", "show portfolio value in BRL").
+		Usage("pbank value").
+		Text("Converts all balances to BRL using live exchange rates.").
+		Text("Crypto tickers use CoinGecko API, fiat currencies use AwesomeAPI.").
+		Section("Example Output",
+			gohelp.Item("Fund", "Currency\tAmount\tBRL Value"),
+			gohelp.Item("Wise", "USD\t100.00\t500.00"),
+			gohelp.Item("Binance", "BTC\t0.5000\t150,000.00"),
+		).
+		Text("N/A is shown for currencies that cannot be converted.")
+
+	return root, []*gohelp.Page{fund, transactions, balance, edit, value}
 }
 
-func showHelp(args []string) {
+func HandleHelp(args []string) {
 	root, pages := buildHelp()
 	gohelp.Run(args, root, pages...)
 }

@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"database/sql"
@@ -10,18 +10,16 @@ import (
 	"time"
 )
 
-func handleAdd(db *sql.DB, args []string) {
+func HandleAdd(db *sql.DB, args []string) error {
 	if len(args) < 4 {
-		fmt.Fprintln(os.Stderr, "Usage: pbank add <fund> <currency> <amount> <title> [--category X] [--notes \"...\"]")
-		os.Exit(1)
+		return fmt.Errorf("usage: pbank add <fund> <currency> <amount> <title> [--category X] [--notes \"...\"]")
 	}
 
 	fund := args[0]
 	currency := strings.ToUpper(args[1])
 	amount, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: invalid amount: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("invalid amount: %w", err)
 	}
 	title := args[3]
 
@@ -36,21 +34,19 @@ func handleAdd(db *sql.DB, args []string) {
 		}
 	}
 
-	addMoney(db, fund, currency, amount, title, category, notes)
+	return addMoney(db, fund, currency, amount, title, category, notes)
 }
 
-func handleDeduct(db *sql.DB, args []string) {
+func HandleDeduct(db *sql.DB, args []string) error {
 	if len(args) < 4 {
-		fmt.Fprintln(os.Stderr, "Usage: pbank deduct <fund> <currency> <amount> <title> [--category X] [--notes \"...\"]")
-		os.Exit(1)
+		return fmt.Errorf("usage: pbank deduct <fund> <currency> <amount> <title> [--category X] [--notes \"...\"]")
 	}
 
 	fund := args[0]
 	currency := strings.ToUpper(args[1])
 	amount, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: invalid amount: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("invalid amount: %w", err)
 	}
 	title := args[3]
 
@@ -65,63 +61,53 @@ func handleDeduct(db *sql.DB, args []string) {
 		}
 	}
 
-	addMoney(db, fund, currency, -amount, title, category, notes)
+	return addMoney(db, fund, currency, -amount, title, category, notes)
 }
 
-func addMoney(db *sql.DB, fundLabel, currency string, amount float64, title, category, notes string) {
+func addMoney(db *sql.DB, fundLabel, currency string, amount float64, title, category, notes string) error {
 	var fundID int
 	err := db.QueryRow("SELECT id FROM funds WHERE label = ?", fundLabel).Scan(&fundID)
 	if err == sql.ErrNoRows {
-		fmt.Fprintf(os.Stderr, "Error: fund '%s' not found\n", fundLabel)
-		os.Exit(1)
+		return fmt.Errorf("fund '%s' not found", fundLabel)
 	} else if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 	defer tx.Rollback()
 
-	// Insert or get fund_balance
 	_, err = tx.Exec(`
 		INSERT INTO fund_balances (fund_id, currency, amount)
 		VALUES (?, ?, 0)
 		ON CONFLICT(fund_id, currency) DO NOTHING
 	`, fundID, currency)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
-	// Insert transaction
 	date := time.Now().Format("2006-01-02")
 	_, err = tx.Exec(`
 		INSERT INTO transactions (fund_id, currency, date, title, amount, category, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, fundID, currency, date, title, amount, category, notes)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to create transaction: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create transaction: %w", err)
 	}
 
-	// Update balance
 	_, err = tx.Exec(`
 		UPDATE fund_balances
 		SET amount = amount + ?
 		WHERE fund_id = ? AND currency = ?
 	`, amount, fundID, currency)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to update balance: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to update balance: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	var newBalance float64
@@ -132,19 +118,17 @@ func addMoney(db *sql.DB, fundLabel, currency string, amount float64, title, cat
 	} else {
 		fmt.Printf("Deducted %.2f %s from %s (balance: %.2f %s)\n", -amount, currency, fundLabel, newBalance, currency)
 	}
+	return nil
 }
 
-func txEdit(db *sql.DB, args []string) {
+func HandleEdit(db *sql.DB, args []string) error {
 	if len(args) < 3 {
-		fmt.Fprintln(os.Stderr, "Usage: pbank edit <id> <field> <value>")
-		fmt.Fprintln(os.Stderr, "Fields: title, amount, category, notes, date")
-		os.Exit(1)
+		return fmt.Errorf("usage: pbank edit <id> <field> <value>\nFields: title, amount, category, notes, date")
 	}
 
 	txID, err := strconv.Atoi(args[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: invalid transaction ID: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("invalid transaction ID: %w", err)
 	}
 
 	field := args[1]
@@ -159,28 +143,24 @@ func txEdit(db *sql.DB, args []string) {
 	}
 
 	if !allowedFields[field] {
-		fmt.Fprintf(os.Stderr, "Error: invalid field '%s'. Allowed: title, amount, category, notes, date\n", field)
-		os.Exit(1)
+		return fmt.Errorf("invalid field '%s'. Allowed: title, amount, category, notes, date", field)
 	}
 
 	if field == "amount" {
-		updateAmount(db, txID, value)
-	} else {
-		updateField(db, txID, field, value)
+		return updateAmount(db, txID, value)
 	}
+	return updateField(db, txID, field, value)
 }
 
-func updateAmount(db *sql.DB, txID int, newAmountStr string) {
+func updateAmount(db *sql.DB, txID int, newAmountStr string) error {
 	newAmount, err := strconv.ParseFloat(newAmountStr, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: invalid amount: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("invalid amount: %w", err)
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 	defer tx.Rollback()
 
@@ -189,19 +169,16 @@ func updateAmount(db *sql.DB, txID int, newAmountStr string) {
 	var currency string
 	err = tx.QueryRow("SELECT amount, fund_id, currency FROM transactions WHERE id = ?", txID).Scan(&oldAmount, &fundID, &currency)
 	if err == sql.ErrNoRows {
-		fmt.Fprintf(os.Stderr, "Error: transaction %d not found\n", txID)
-		os.Exit(1)
+		return fmt.Errorf("transaction %d not found", txID)
 	} else if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	diff := newAmount - oldAmount
 
 	_, err = tx.Exec("UPDATE transactions SET amount = ? WHERE id = ?", newAmount, txID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to update transaction: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to update transaction: %w", err)
 	}
 
 	_, err = tx.Exec(`
@@ -210,40 +187,37 @@ func updateAmount(db *sql.DB, txID int, newAmountStr string) {
 		WHERE fund_id = ? AND currency = ?
 	`, diff, fundID, currency)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to update balance: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to update balance: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	fmt.Printf("Updated transaction %d: amount %.2f → %.2f (balance adjusted by %.2f %s)\n", txID, oldAmount, newAmount, diff, currency)
+	return nil
 }
 
-func updateField(db *sql.DB, txID int, field, value string) {
+func updateField(db *sql.DB, txID int, field, value string) error {
 	var exists bool
 	err := db.QueryRow("SELECT 1 FROM transactions WHERE id = ?", txID).Scan(&exists)
 	if err == sql.ErrNoRows {
-		fmt.Fprintf(os.Stderr, "Error: transaction %d not found\n", txID)
-		os.Exit(1)
+		return fmt.Errorf("transaction %d not found", txID)
 	} else if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	query := fmt.Sprintf("UPDATE transactions SET %s = ? WHERE id = ?", field)
 	_, err = db.Exec(query, value, txID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to update %s: %v\n", field, err)
-		os.Exit(1)
+		return fmt.Errorf("failed to update %s: %w", field, err)
 	}
 
 	fmt.Printf("Updated transaction %d: %s = %s\n", txID, field, value)
+	return nil
 }
 
-func txList(db *sql.DB, args []string) {
+func HandleList(db *sql.DB, args []string) error {
 	var fundFilter, currencyFilter, sinceFilter, categoryFilter string
 
 	for i := 0; i < len(args); i++ {
@@ -291,8 +265,7 @@ func txList(db *sql.DB, args []string) {
 
 	rows, err := db.Query(query, queryArgs...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 	defer rows.Close()
 
@@ -308,8 +281,7 @@ func txList(db *sql.DB, args []string) {
 		var category sql.NullString
 
 		if err := rows.Scan(&id, &fund, &currency, &date, &title, &amount, &category); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		cat := "-"
@@ -325,4 +297,5 @@ func txList(db *sql.DB, args []string) {
 	if count == 0 {
 		fmt.Println("No transactions found")
 	}
+	return nil
 }

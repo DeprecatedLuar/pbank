@@ -11,6 +11,20 @@ import (
 	"text/tabwriter"
 )
 
+// API configuration
+const (
+	coinGeckoAPIURL = "https://api.coingecko.com/api/v3/simple/price?ids=%s&vs_currencies=%s"
+	awesomeAPIURL   = "https://economia.awesomeapi.com.br/json/last/%s"
+	httpStatusOK    = 200
+)
+
+// Display formatting
+const (
+	valueTabPad     = 2
+	decimalFormat   = "%.2f"
+	valueNotAvail   = "N/A"
+)
+
 var cryptoIDMap = map[string]string{
 	"BTC":  "bitcoin",
 	"ETH":  "ethereum",
@@ -51,7 +65,12 @@ var cryptoIDMap = map[string]string{
 
 
 
-func HandleValue(db *sql.DB, args []string) error {
+func HandleNetworth(db *sql.DB, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("currency required. Usage: pbank networth <CURRENCY>\nExample: pbank networth BRL")
+	}
+
+	targetCurrency := strings.ToUpper(args[0])
 	rows, err := db.Query(`
 		SELECT f.label, fb.currency, fb.amount
 		FROM fund_balances fb
@@ -83,7 +102,7 @@ func HandleValue(db *sql.DB, args []string) error {
 
 		if _, isCrypto := cryptoIDMap[b.Currency]; isCrypto {
 			cryptoCurrencies[b.Currency] = true
-		} else if b.Currency != "BRL" {
+		} else if b.Currency != targetCurrency {
 			fiatCurrencies[b.Currency] = true
 		}
 	}
@@ -96,7 +115,7 @@ func HandleValue(db *sql.DB, args []string) error {
 	cryptoRates := make(map[string]float64)
 	if len(cryptoCurrencies) > 0 {
 		var err error
-		cryptoRates, err = fetchCryptoRates(cryptoCurrencies)
+		cryptoRates, err = fetchCryptoRates(cryptoCurrencies, targetCurrency)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: crypto rates fetch failed: %v\n", err)
 		}
@@ -105,49 +124,49 @@ func HandleValue(db *sql.DB, args []string) error {
 	fiatRates := make(map[string]float64)
 	if len(fiatCurrencies) > 0 {
 		var err error
-		fiatRates, err = fetchFiatRates(fiatCurrencies)
+		fiatRates, err = fetchFiatRates(fiatCurrencies, targetCurrency)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: fiat rates fetch failed: %v\n", err)
 		}
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Fund\tCurrency\tAmount\tBRL Value")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, valueTabPad, ' ', 0)
+	fmt.Fprintf(w, "Fund\tCurrency\tAmount\t%s Value\n", targetCurrency)
 	fmt.Fprintln(w, "----\t--------\t------\t---------")
 
 	total := 0.0
 	for _, b := range balances {
-		var brlValue string
+		var convertedValue string
 		var numericValue float64
 
-		if b.Currency == "BRL" {
-			brlValue = fmt.Sprintf("%.2f", b.Amount)
+		if b.Currency == targetCurrency {
+			convertedValue = fmt.Sprintf(decimalFormat, b.Amount)
 			numericValue = b.Amount
 		} else if rate, ok := cryptoRates[b.Currency]; ok {
 			numericValue = b.Amount * rate
-			brlValue = fmt.Sprintf("%.2f", numericValue)
+			convertedValue = fmt.Sprintf(decimalFormat, numericValue)
 		} else if rate, ok := fiatRates[b.Currency]; ok {
 			numericValue = b.Amount * rate
-			brlValue = fmt.Sprintf("%.2f", numericValue)
+			convertedValue = fmt.Sprintf(decimalFormat, numericValue)
 		} else {
-			brlValue = "N/A"
+			convertedValue = valueNotAvail
 		}
 
-		if brlValue != "N/A" {
+		if convertedValue != valueNotAvail {
 			total += numericValue
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%v\t%s\n", b.Fund, b.Currency, b.Amount, brlValue)
+		fmt.Fprintf(w, "%s\t%s\t%v\t%s\n", b.Fund, b.Currency, b.Amount, convertedValue)
 	}
 
 	fmt.Fprintln(w, "----\t--------\t------\t---------")
-	fmt.Fprintf(w, "Total\t\t\t%.2f BRL\n", total)
+	fmt.Fprintf(w, "Total\t\t\t"+decimalFormat+" %s\n", total, targetCurrency)
 	w.Flush()
 
 	return nil
 }
 
-func fetchCryptoRates(currencies map[string]bool) (map[string]float64, error) {
+func fetchCryptoRates(currencies map[string]bool, targetCurrency string) (map[string]float64, error) {
 	ids := make([]string, 0, len(currencies))
 	for ticker := range currencies {
 		if id, ok := cryptoIDMap[ticker]; ok {
@@ -159,7 +178,7 @@ func fetchCryptoRates(currencies map[string]bool) (map[string]float64, error) {
 		return nil, nil
 	}
 
-	url := fmt.Sprintf("https://api.coingecko.com/api/v3/simple/price?ids=%s&vs_currencies=brl", strings.Join(ids, ","))
+	url := fmt.Sprintf(coinGeckoAPIURL, strings.Join(ids, ","), strings.ToLower(targetCurrency))
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -167,7 +186,7 @@ func fetchCryptoRates(currencies map[string]bool) (map[string]float64, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != httpStatusOK {
 		return nil, fmt.Errorf("coingecko returned status %d", resp.StatusCode)
 	}
 
@@ -181,12 +200,13 @@ func fetchCryptoRates(currencies map[string]bool) (map[string]float64, error) {
 		return nil, err
 	}
 
+	targetCurrencyLower := strings.ToLower(targetCurrency)
 	rates := make(map[string]float64)
 	for ticker, coinID := range cryptoIDMap {
 		if currencies[ticker] {
 			if priceData, ok := data[coinID]; ok {
-				if brl, ok := priceData["brl"]; ok {
-					rates[ticker] = brl
+				if rate, ok := priceData[targetCurrencyLower]; ok {
+					rates[ticker] = rate
 				}
 			}
 		}
@@ -195,13 +215,13 @@ func fetchCryptoRates(currencies map[string]bool) (map[string]float64, error) {
 	return rates, nil
 }
 
-func fetchFiatRates(currencies map[string]bool) (map[string]float64, error) {
+func fetchFiatRates(currencies map[string]bool, targetCurrency string) (map[string]float64, error) {
 	pairs := make([]string, 0, len(currencies))
 	for curr := range currencies {
-		pairs = append(pairs, curr+"-BRL")
+		pairs = append(pairs, curr+"-"+targetCurrency)
 	}
 
-	url := fmt.Sprintf("https://economia.awesomeapi.com.br/json/last/%s", strings.Join(pairs, ","))
+	url := fmt.Sprintf(awesomeAPIURL, strings.Join(pairs, ","))
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -209,7 +229,7 @@ func fetchFiatRates(currencies map[string]bool) (map[string]float64, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != httpStatusOK {
 		return nil, fmt.Errorf("awesomeapi returned status %d", resp.StatusCode)
 	}
 
@@ -227,7 +247,7 @@ func fetchFiatRates(currencies map[string]bool) (map[string]float64, error) {
 
 	rates := make(map[string]float64)
 	for curr := range currencies {
-		key := strings.ReplaceAll(curr+"BRL", "-", "")
+		key := strings.ReplaceAll(curr+targetCurrency, "-", "")
 		if rateData, ok := data[key]; ok {
 			var rate float64
 			if _, err := fmt.Sscanf(rateData.Bid, "%f", &rate); err == nil {

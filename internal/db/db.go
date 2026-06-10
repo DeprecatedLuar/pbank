@@ -9,30 +9,42 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const dbFile = "finances.db"
+// Database configuration
+const (
+	dbFile            = "finances.db"
+	dataDir           = "pbank"
+	defaultDataSubdir = ".local/share"
+	dataDirPerm       = 0755
+)
+
+// Environment variables
+const (
+	envPbankHome   = "PBANK_HOME"
+	envXDGDataHome = "XDG_DATA_HOME"
+)
 
 func getDBPath() string {
 	// Override via env var
-	if home := os.Getenv("PBANK_HOME"); home != "" {
+	if home := os.Getenv(envPbankHome); home != "" {
 		return filepath.Join(home, dbFile)
 	}
 	// XDG data home
-	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
-		return filepath.Join(xdg, "pbank", dbFile)
+	if xdg := os.Getenv(envXDGDataHome); xdg != "" {
+		return filepath.Join(xdg, dataDir, dbFile)
 	}
 	// Default: ~/.local/share/pbank/
 	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".local", "share", "pbank", dbFile)
+		return filepath.Join(home, defaultDataSubdir, dataDir, dbFile)
 	}
 	// Fallback if home dir lookup fails
-	return filepath.Join(".local", "share", "pbank", dbFile)
+	return filepath.Join(defaultDataSubdir, dataDir, dbFile)
 }
 
 func OpenDB() (*sql.DB, error) {
 	dbPath := getDBPath()
 	// Ensure directory exists
 	dir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, dataDirPerm); err != nil {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 	db, err := sql.Open("sqlite", dbPath)

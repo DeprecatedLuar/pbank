@@ -7,6 +7,14 @@ import (
 	"text/tabwriter"
 )
 
+// Fund command constants
+const (
+	minArgsFundAdd  = 2
+	minArgsFundRm   = 2
+	flagForce       = "--force"
+	tabWriterPad    = 2
+)
+
 func HandleFund(db *sql.DB, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("usage: pbank fund <add|rm|list>")
@@ -15,15 +23,15 @@ func HandleFund(db *sql.DB, args []string) error {
 	subcmd := args[0]
 	switch subcmd {
 	case "add":
-		if len(args) < 2 {
+		if len(args) < minArgsFundAdd {
 			return fmt.Errorf("usage: pbank fund add <label>")
 		}
 		return fundAdd(db, args[1])
 	case "rm":
-		if len(args) < 2 {
-			return fmt.Errorf("usage: pbank fund rm <label> [--force]")
+		if len(args) < minArgsFundRm {
+			return fmt.Errorf("usage: pbank fund rm <label> [%s]", flagForce)
 		}
-		force := len(args) > 2 && args[2] == "--force"
+		force := len(args) > 2 && args[2] == flagForce
 		return fundRm(db, args[1], force)
 	case "list":
 		return fundList(db)
@@ -89,7 +97,7 @@ func fundList(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, tabWriterPad, ' ', 0)
 	fmt.Fprintln(w, "ID\tFund\tCurrencies\tActive Balances")
 	fmt.Fprintln(w, "--\t----\t----------\t---------------")
 

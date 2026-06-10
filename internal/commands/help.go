@@ -14,7 +14,7 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("list", "List transactions with optional filters", "pbank list --fund wallet --since 2026-05-01"),
 			gohelp.Item("edit", "Edit a transaction field", "pbank edit 42 category groceries"),
 			gohelp.Item("balance", "Show current balances for all funds", "pbank balance"),
-			gohelp.Item("value", "Show current value of all balances in BRL", "pbank value"),
+			gohelp.Item("networth", "Show total net worth in any currency", "pbank networth USD"),
 		).
 		Section("Global Options",
 			gohelp.Item("help", "Show help for any command", "pbank help fund"),
@@ -78,18 +78,25 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 		).
 		Text("When editing amount, fund balance is automatically recalculated.")
 
-	value := gohelp.NewPage("value", "show portfolio value in BRL").
-		Usage("pbank value").
-		Text("Converts all balances to BRL using live exchange rates.").
+	networth := gohelp.NewPage("networth", "show portfolio net worth in any currency").
+		Usage("pbank networth <CURRENCY>").
+		Text("Converts all balances to the specified target currency using live exchange rates.").
 		Text("Crypto tickers use CoinGecko API, fiat currencies use AwesomeAPI.").
-		Section("Example Output",
-			gohelp.Item("Fund", "Currency\tAmount\tBRL Value"),
-			gohelp.Item("Wise", "USD\t100.00\t500.00"),
-			gohelp.Item("Binance", "BTC\t0.5000\t150,000.00"),
+		Text("Currency must be specified as a 3-letter code (USD, EUR, BRL, JPY, etc.).").
+		Section("Examples",
+			gohelp.Item("pbank networth USD", "Show net worth in US Dollars"),
+			gohelp.Item("pbank networth EUR", "Show net worth in Euros"),
+			gohelp.Item("pbank networth BRL", "Show net worth in Brazilian Real"),
+		).
+		Section("Example Output (pbank networth USD)",
+			gohelp.Item("Fund", "Currency\tAmount\tUSD Value"),
+			gohelp.Item("Wise", "EUR\t100.00\t115.00"),
+			gohelp.Item("Binance", "BTC\t0.5000\t30,000.00"),
+			gohelp.Item("Total", "\t\t30,115.00 USD"),
 		).
 		Text("N/A is shown for currencies that cannot be converted.")
 
-	return root, []*gohelp.Page{fund, transactions, balance, edit, value}
+	return root, []*gohelp.Page{fund, transactions, balance, edit, networth}
 }
 
 func HandleHelp(args []string) {

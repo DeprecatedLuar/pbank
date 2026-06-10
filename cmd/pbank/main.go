@@ -8,74 +8,105 @@ import (
 	"github.com/DeprecatedLuar/pbank/internal/db"
 )
 
+// Exit codes
+const (
+	exitSuccess = 0
+	exitError   = 1
+)
+
+// Argument indices
+const (
+	minArgs    = 2
+	cmdArgIdx  = 1
+	argsOffset = 2
+)
+
+// Command names
+const (
+	cmdHelp     = "help"
+	cmdFund     = "fund"
+	cmdAdd      = "add"
+	cmdDeduct   = "deduct"
+	cmdList     = "list"
+	cmdEdit     = "edit"
+	cmdBalance  = "balance"
+	cmdNetworth = "networth"
+)
+
+// Help flags
+const (
+	flagHelp      = "--help"
+	flagHelpShort = "-h"
+)
+
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < minArgs {
 		commands.HandleHelp([]string{})
-		os.Exit(1)
+		os.Exit(exitError)
 	}
 
-	cmd := os.Args[1]
+	cmd := os.Args[cmdArgIdx]
 
-	if cmd == "help" || cmd == "--help" || cmd == "-h" {
-		commands.HandleHelp(os.Args[1:])
+	if cmd == cmdHelp || cmd == flagHelp || cmd == flagHelpShort {
+		commands.HandleHelp(os.Args[cmdArgIdx:])
 		return
 	}
 
 	database, err := db.OpenDB()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		os.Exit(exitError)
 	}
 	defer database.Close()
 
 	if err := db.EnsureTables(database); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		os.Exit(exitError)
 	}
 
 	switch cmd {
-	case "fund":
-		if len(os.Args) < 3 {
-			commands.HandleHelp([]string{"help", "fund"})
-			os.Exit(1)
+	case cmdFund:
+		if len(os.Args) < minArgs+1 {
+			commands.HandleHelp([]string{cmdHelp, cmdFund})
+			os.Exit(exitError)
 		}
-		if err := commands.HandleFund(database, os.Args[2:]); err != nil {
+		if err := commands.HandleFund(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			os.Exit(exitError)
 		}
-	case "add":
-		if err := commands.HandleAdd(database, os.Args[2:]); err != nil {
+	case cmdAdd:
+		if err := commands.HandleAdd(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			os.Exit(exitError)
 		}
-	case "deduct":
-		if err := commands.HandleDeduct(database, os.Args[2:]); err != nil {
+	case cmdDeduct:
+		if err := commands.HandleDeduct(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			os.Exit(exitError)
 		}
-	case "list":
-		if err := commands.HandleList(database, os.Args[2:]); err != nil {
+	case cmdList:
+		if err := commands.HandleList(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			os.Exit(exitError)
 		}
-	case "edit":
-		if err := commands.HandleEdit(database, os.Args[2:]); err != nil {
+	case cmdEdit:
+		if err := commands.HandleEdit(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			os.Exit(exitError)
 		}
-	case "balance":
-		if err := commands.HandleBalance(database, os.Args[2:]); err != nil {
+	case cmdBalance:
+		if err := commands.HandleBalance(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			os.Exit(exitError)
 		}
-	case "value":
-		if err := commands.HandleValue(database, os.Args[2:]); err != nil {
+	case cmdNetworth:
+		if err := commands.HandleNetworth(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			os.Exit(exitError)
 		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
 		commands.HandleHelp([]string{})
-		os.Exit(1)
+		os.Exit(exitError)
 	}
 }

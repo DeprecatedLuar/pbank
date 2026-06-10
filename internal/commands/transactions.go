@@ -10,9 +10,40 @@ import (
 	"time"
 )
 
+// Command argument counts
+const (
+	minArgsAddDeduct = 4
+	minArgsEdit      = 3
+)
+
+// Flags and options
+const (
+	flagCategory = "--category"
+	flagNotes    = "--notes"
+	flagFund     = "--fund"
+	flagCurrency = "--currency"
+	flagSince    = "--since"
+)
+
+// Transaction field names
+const (
+	fieldTitle    = "title"
+	fieldAmount   = "amount"
+	fieldCategory = "category"
+	fieldNotes    = "notes"
+	fieldDate     = "date"
+)
+
+// Formatting constants
+const (
+	dateFormat      = "2006-01-02"
+	tabWriterMinPad = 2
+	initialBalance  = 0
+)
+
 func HandleAdd(db *sql.DB, args []string) error {
-	if len(args) < 4 {
-		return fmt.Errorf("usage: pbank add <fund> <currency> <amount> <title> [--category X] [--notes \"...\"]")
+	if len(args) < minArgsAddDeduct {
+		return fmt.Errorf("usage: pbank add <fund> <currency> <amount> <title> [%s X] [%s \"...\"]", flagCategory, flagNotes)
 	}
 
 	fund := args[0]
@@ -25,10 +56,10 @@ func HandleAdd(db *sql.DB, args []string) error {
 
 	var category, notes string
 	for i := 4; i < len(args); i++ {
-		if args[i] == "--category" && i+1 < len(args) {
+		if args[i] == flagCategory && i+1 < len(args) {
 			category = args[i+1]
 			i++
-		} else if args[i] == "--notes" && i+1 < len(args) {
+		} else if args[i] == flagNotes && i+1 < len(args) {
 			notes = args[i+1]
 			i++
 		}
@@ -38,8 +69,8 @@ func HandleAdd(db *sql.DB, args []string) error {
 }
 
 func HandleDeduct(db *sql.DB, args []string) error {
-	if len(args) < 4 {
-		return fmt.Errorf("usage: pbank deduct <fund> <currency> <amount> <title> [--category X] [--notes \"...\"]")
+	if len(args) < minArgsAddDeduct {
+		return fmt.Errorf("usage: pbank deduct <fund> <currency> <amount> <title> [%s X] [%s \"...\"]", flagCategory, flagNotes)
 	}
 
 	fund := args[0]
@@ -52,10 +83,10 @@ func HandleDeduct(db *sql.DB, args []string) error {
 
 	var category, notes string
 	for i := 4; i < len(args); i++ {
-		if args[i] == "--category" && i+1 < len(args) {
+		if args[i] == flagCategory && i+1 < len(args) {
 			category = args[i+1]
 			i++
-		} else if args[i] == "--notes" && i+1 < len(args) {
+		} else if args[i] == flagNotes && i+1 < len(args) {
 			notes = args[i+1]
 			i++
 		}
@@ -81,14 +112,14 @@ func addMoney(db *sql.DB, fundLabel, currency string, amount float64, title, cat
 
 	_, err = tx.Exec(`
 		INSERT INTO fund_balances (fund_id, currency, amount)
-		VALUES (?, ?, 0)
+		VALUES (?, ?, ?)
 		ON CONFLICT(fund_id, currency) DO NOTHING
-	`, fundID, currency)
+	`, fundID, currency, initialBalance)
 	if err != nil {
 		return err
 	}
 
-	date := time.Now().Format("2006-01-02")
+	date := time.Now().Format(dateFormat)
 	_, err = tx.Exec(`
 		INSERT INTO transactions (fund_id, currency, date, title, amount, category, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -122,8 +153,9 @@ func addMoney(db *sql.DB, fundLabel, currency string, amount float64, title, cat
 }
 
 func HandleEdit(db *sql.DB, args []string) error {
-	if len(args) < 3 {
-		return fmt.Errorf("usage: pbank edit <id> <field> <value>\nFields: title, amount, category, notes, date")
+	if len(args) < minArgsEdit {
+		return fmt.Errorf("usage: pbank edit <id> <field> <value>\nFields: %s, %s, %s, %s, %s",
+			fieldTitle, fieldAmount, fieldCategory, fieldNotes, fieldDate)
 	}
 
 	txID, err := strconv.Atoi(args[0])
@@ -135,18 +167,19 @@ func HandleEdit(db *sql.DB, args []string) error {
 	value := args[2]
 
 	allowedFields := map[string]bool{
-		"title":    true,
-		"amount":   true,
-		"category": true,
-		"notes":    true,
-		"date":     true,
+		fieldTitle:    true,
+		fieldAmount:   true,
+		fieldCategory: true,
+		fieldNotes:    true,
+		fieldDate:     true,
 	}
 
 	if !allowedFields[field] {
-		return fmt.Errorf("invalid field '%s'. Allowed: title, amount, category, notes, date", field)
+		return fmt.Errorf("invalid field '%s'. Allowed: %s, %s, %s, %s, %s", field,
+			fieldTitle, fieldAmount, fieldCategory, fieldNotes, fieldDate)
 	}
 
-	if field == "amount" {
+	if field == fieldAmount {
 		return updateAmount(db, txID, value)
 	}
 	return updateField(db, txID, field, value)
@@ -221,16 +254,16 @@ func HandleList(db *sql.DB, args []string) error {
 	var fundFilter, currencyFilter, sinceFilter, categoryFilter string
 
 	for i := 0; i < len(args); i++ {
-		if args[i] == "--fund" && i+1 < len(args) {
+		if args[i] == flagFund && i+1 < len(args) {
 			fundFilter = args[i+1]
 			i++
-		} else if args[i] == "--currency" && i+1 < len(args) {
+		} else if args[i] == flagCurrency && i+1 < len(args) {
 			currencyFilter = strings.ToUpper(args[i+1])
 			i++
-		} else if args[i] == "--since" && i+1 < len(args) {
+		} else if args[i] == flagSince && i+1 < len(args) {
 			sinceFilter = args[i+1]
 			i++
-		} else if args[i] == "--category" && i+1 < len(args) {
+		} else if args[i] == flagCategory && i+1 < len(args) {
 			categoryFilter = args[i+1]
 			i++
 		}
@@ -269,7 +302,7 @@ func HandleList(db *sql.DB, args []string) error {
 	}
 	defer rows.Close()
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, tabWriterMinPad, ' ', 0)
 	fmt.Fprintln(w, "ID\tDate\tFund\tCurrency\tAmount\tTitle\tCategory")
 	fmt.Fprintln(w, "--\t----\t----\t--------\t------\t-----\t--------")
 

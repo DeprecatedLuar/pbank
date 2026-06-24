@@ -23,6 +23,8 @@ const (
 	flagFund     = "--fund"
 	flagCurrency = "--currency"
 	flagSince    = "--since"
+	flagLimit    = "--limit"
+	flagAll      = "--all"
 )
 
 // Transaction field names
@@ -36,9 +38,11 @@ const (
 
 // Formatting constants
 const (
-	dateFormat      = "2006-01-02"
-	tabWriterMinPad = 2
-	initialBalance  = 0
+	dateFormat        = "2006-01-02"
+	tabWriterMinPad   = 2
+	initialBalance    = 0
+	defaultHistLimit  = 15
+	unlimitedHistory  = 0
 )
 
 func HandleAdd(db *sql.DB, args []string) error {
@@ -250,8 +254,9 @@ func updateField(db *sql.DB, txID int, field, value string) error {
 	return nil
 }
 
-func HandleList(db *sql.DB, args []string) error {
+func HandleHistory(db *sql.DB, args []string) error {
 	var fundFilter, currencyFilter, sinceFilter, categoryFilter string
+	limit := defaultHistLimit
 
 	for i := 0; i < len(args); i++ {
 		if args[i] == flagFund && i+1 < len(args) {
@@ -266,6 +271,15 @@ func HandleList(db *sql.DB, args []string) error {
 		} else if args[i] == flagCategory && i+1 < len(args) {
 			categoryFilter = args[i+1]
 			i++
+		} else if args[i] == flagLimit && i+1 < len(args) {
+			var err error
+			limit, err = strconv.Atoi(args[i+1])
+			if err != nil {
+				return fmt.Errorf("invalid limit value: %w", err)
+			}
+			i++
+		} else if args[i] == flagAll {
+			limit = unlimitedHistory
 		}
 	}
 
@@ -295,6 +309,11 @@ func HandleList(db *sql.DB, args []string) error {
 	}
 
 	query += " ORDER BY t.date DESC, t.id DESC"
+
+	if limit > unlimitedHistory {
+		query += " LIMIT ?"
+		queryArgs = append(queryArgs, limit)
+	}
 
 	rows, err := db.Query(query, queryArgs...)
 	if err != nil {

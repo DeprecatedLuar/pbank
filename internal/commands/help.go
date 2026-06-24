@@ -11,7 +11,7 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("fund", "Manage funds (accounts, wallets, etc.)", "pbank fund list"),
 			gohelp.Item("add", "Add money to a fund", "pbank add wallet USD 100 'Salary' --category income"),
 			gohelp.Item("deduct", "Deduct money from a fund", "pbank deduct wallet USD 25 'Groceries' --category food"),
-			gohelp.Item("list", "List transactions with optional filters", "pbank list --fund wallet --since 2026-05-01"),
+			gohelp.Item("history", "Show transaction history with optional filters", "pbank history --fund wallet --since 2026-05-01"),
 			gohelp.Item("edit", "Edit a transaction field", "pbank edit 42 category groceries"),
 			gohelp.Item("balance", "Show current balances for all funds", "pbank balance"),
 			gohelp.Item("networth", "Show total net worth in any currency", "pbank networth USD"),
@@ -46,14 +46,16 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("deduct <fund> <curr> <amt> <title>", "Deduct money from a fund", "pbank deduct wallet USD 45 'Dinner'"),
 			gohelp.Item("deduct ... --category <cat>", "Tag with a category", "pbank deduct wallet USD 12 'Coffee' --category food"),
 		).
-		Section("Listing Transactions",
-			gohelp.Item("list", "Show all transactions (newest first)", "pbank list"),
-			gohelp.Item("list --fund <name>", "Filter by fund", "pbank list --fund savings"),
-			gohelp.Item("list --currency <code>", "Filter by currency", "pbank list --currency BTC"),
-			gohelp.Item("list --since <date>", "Show transactions from date onward (YYYY-MM-DD)", "pbank list --since 2026-05-01"),
-			gohelp.Item("list --category <cat>", "Filter by category", "pbank list --category food"),
+		Section("Transaction History",
+			gohelp.Item("history", "Show latest 15 transactions (newest first)", "pbank history"),
+			gohelp.Item("history --limit <N>", "Show latest N transactions", "pbank history --limit 50"),
+			gohelp.Item("history --all", "Show all transactions (no limit)", "pbank history --all"),
+			gohelp.Item("history --fund <name>", "Filter by fund", "pbank history --fund savings"),
+			gohelp.Item("history --currency <code>", "Filter by currency", "pbank history --currency BTC"),
+			gohelp.Item("history --since <date>", "Show transactions from date onward (YYYY-MM-DD)", "pbank history --since 2026-05-01"),
+			gohelp.Item("history --category <cat>", "Filter by category", "pbank history --category food"),
 		).
-		Text("Filters can be combined: pbank list --fund wallet --currency USD --since 2026-01-01")
+		Text("Filters can be combined: pbank history --fund wallet --currency USD --since 2026-01-01 --limit 20")
 
 	balance := gohelp.NewPage("balance", "view current balances").
 		Usage("pbank balance").
@@ -65,7 +67,7 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("OCBC:", ""),
 			gohelp.Item("  SGD: 5,000.00", ""),
 		).
-		Text("Balances are calculated from all transactions. Use 'pbank list' to see transaction history.")
+		Text("Balances are calculated from all transactions. Use 'pbank history' to see transaction history.")
 
 	edit := gohelp.NewPage("edit", "edit transaction fields").
 		Usage("pbank edit <id> <field> <value>").

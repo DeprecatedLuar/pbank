@@ -27,7 +27,7 @@ const (
 	cmdFund     = "fund"
 	cmdAdd      = "add"
 	cmdDeduct   = "deduct"
-	cmdList     = "list"
+	cmdList     = "history"
 	cmdEdit     = "edit"
 	cmdBalance  = "balance"
 	cmdNetworth = "networth"
@@ -85,7 +85,7 @@ func main() {
 			os.Exit(exitError)
 		}
 	case cmdList:
-		if err := commands.HandleList(database, os.Args[argsOffset:]); err != nil {
+		if err := commands.HandleHistory(database, os.Args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(exitError)
 		}

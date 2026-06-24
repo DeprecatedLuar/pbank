@@ -11,7 +11,7 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("fund", "Manage funds (accounts, wallets, etc.)", "pbank fund list"),
 			gohelp.Item("add", "Add money to a fund", "pbank add wallet USD 100 'Salary' --category income"),
 			gohelp.Item("deduct", "Deduct money from a fund", "pbank deduct wallet USD 25 'Groceries' --category food"),
-			gohelp.Item("history", "Show transaction history with optional filters", "pbank history --fund wallet --since 2026-05-01"),
+			gohelp.Item("history", "Show/manage transaction history", "pbank history --fund wallet --since 2026-05-01"),
 			gohelp.Item("edit", "Edit a transaction field", "pbank edit 42 category groceries"),
 			gohelp.Item("balance", "Show current balances for all funds", "pbank balance"),
 			gohelp.Item("networth", "Show total net worth in any currency", "pbank networth USD"),
@@ -54,6 +54,7 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("history --currency <code>", "Filter by currency", "pbank history --currency BTC"),
 			gohelp.Item("history --since <date>", "Show transactions from date onward (YYYY-MM-DD)", "pbank history --since 2026-05-01"),
 			gohelp.Item("history --category <cat>", "Filter by category", "pbank history --category food"),
+			gohelp.Item("history undo <id>", "Delete transaction and revert balance changes", "pbank history undo 31"),
 		).
 		Text("Filters can be combined: pbank history --fund wallet --currency USD --since 2026-01-01 --limit 20")
 

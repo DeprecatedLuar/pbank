@@ -1,0 +1,27 @@
+command = "pbank deduct {{fund}} {{currency}} {{amount}} '{{title}}' --category {{category}}"
+description = "Deduct money from a fund (expenses, purchases, bills)"
+
+[fund]
+description = "Fund name"
+type = "string"
+required = true
+
+[currency]
+description = "3-letter currency code (USD, EUR, BRL, etc)"
+type = "string"
+required = true
+
+[amount]
+description = "Amount to deduct"
+type = "number"
+required = true
+
+[title]
+description = "Transaction description/title"
+type = "string"
+required = true
+
+[category]
+description = "Category (food, transport, entertainment, utilities, etc)"
+type = "string"
+required = true

@@ -1,0 +1,32 @@
+command = "pbank history {{fund}} {{currency}} {{since}} {{category}} {{limit}}"
+description = "Show transaction history with optional filters"
+
+[fund]
+description = "Filter by fund name"
+type = "string"
+required = false
+return = "--fund {{$completion}}"
+
+[currency]
+description = "Filter by currency code (e.g., USD, EUR, BRL)"
+type = "string"
+required = false
+return = "--currency {{$completion}}"
+
+[since]
+description = "Show transactions from date onward (YYYY-MM-DD format)"
+type = "string"
+required = false
+return = "--since {{$completion}}"
+
+[category]
+description = "Filter by category (e.g., food, income, transport)"
+type = "string"
+required = false
+return = "--category {{$completion}}"
+
+[limit]
+description = "Maximum number of transactions to show (default: 15-20 for recent history)"
+type = "number"
+required = true
+return = "--limit {{$completion}}"

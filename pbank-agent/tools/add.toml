@@ -1,0 +1,27 @@
+command = "pbank add {{fund}} {{currency}} {{amount}} '{{title}}' --category {{category}}"
+description = "Add money to a fund (income, deposits, received money)"
+
+[fund]
+description = "Fund name"
+type = "string"
+required = true
+
+[currency]
+description = "3-letter currency code (USD, EUR, BRL, etc)"
+type = "string"
+required = true
+
+[amount]
+description = "Amount to add"
+type = "number"
+required = true
+
+[title]
+description = "Transaction description/title"
+type = "string"
+required = true
+
+[category]
+description = "Category (income, salary, gift, etc)"
+type = "string"
+required = true

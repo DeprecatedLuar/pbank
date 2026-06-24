@@ -1,0 +1,7 @@
+command = "pbank {{args}}"
+description = "Run any pbank command (fund management, edit, networth). Use 'help <topic>' to learn command syntax."
+
+[args]
+description = "Command with arguments (e.g., 'fund list', 'edit 5 amount 100', 'networth USD')"
+type = "string"
+required = true

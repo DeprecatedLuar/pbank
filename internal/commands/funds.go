@@ -33,7 +33,7 @@ func HandleFund(db *sql.DB, args []string) error {
 		}
 		force := len(args) > 2 && args[2] == flagForce
 		return fundRm(db, args[1], force)
-	case "list":
+	case "list", "ls":
 		return fundList(db)
 	default:
 		return fmt.Errorf("unknown subcommand: %s", subcmd)

@@ -1,0 +1,12 @@
+provider = "openrouter"
+model = "deepseek/deepseek-v4-flash"
+tools = []
+interfaces = ["telegram", "cli"]
+debug_calls = false
+
+[memory]
+max_messages = 10
+
+# [audio]
+# provider = "whisper"  # or http://localhost:9000/v1 for local whisper server
+# model = "whisper-1"

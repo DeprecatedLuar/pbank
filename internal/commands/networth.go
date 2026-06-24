@@ -63,8 +63,6 @@ var cryptoIDMap = map[string]string{
 	"MBOX": "mobox",
 }
 
-
-
 func HandleNetworth(db *sql.DB, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("currency required. Usage: pbank networth <CURRENCY>\nExample: pbank networth BRL")

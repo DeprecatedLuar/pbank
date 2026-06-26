@@ -1,8 +1,12 @@
+[agent]
 provider = "openrouter"
 model = "deepseek/deepseek-v4-flash"
 tools = []
+logging = false  # false | true | "debug"
+
+[access]
+allow_by_default = true
 interfaces = ["telegram", "cli"]
-debug_calls = false
 
 [memory]
 max_messages = 10

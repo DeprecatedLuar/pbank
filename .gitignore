@@ -79,3 +79,4 @@ doc.md
 !LICENSE
 !shell.nix
 !.gitignore
+!prompt

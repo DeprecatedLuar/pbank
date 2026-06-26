@@ -79,4 +79,6 @@ doc.md
 !LICENSE
 !shell.nix
 !.gitignore
-!prompt
+!prompt*
+!pbank-agent/prompts/
+!pbank-agent/prompts/**

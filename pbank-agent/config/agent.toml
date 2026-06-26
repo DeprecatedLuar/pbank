@@ -5,7 +5,7 @@ tools = []
 logging = false  # false | true | "debug"
 
 [access]
-allow_by_default = true
+allow_by_default = false
 interfaces = ["telegram", "cli"]
 
 [memory]

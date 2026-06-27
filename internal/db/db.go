@@ -55,6 +55,26 @@ func OpenDB() (*sql.DB, error) {
 }
 
 func EnsureTables(db *sql.DB) error {
+	// Check if old subscriptions table exists (for migration)
+	var tableName string
+	err := db.QueryRow(`
+		SELECT name FROM sqlite_master
+		WHERE type='table' AND name='subscriptions'
+	`).Scan(&tableName)
+
+	if err == nil {
+		// Old table exists, migrate it
+		_, err = db.Exec(`ALTER TABLE subscriptions RENAME TO recurring_transactions`)
+		if err != nil {
+			return fmt.Errorf("failed to rename subscriptions table: %w", err)
+		}
+
+		// Add missing columns (ignore errors if they already exist)
+		db.Exec(`ALTER TABLE recurring_transactions ADD COLUMN category TEXT`)
+		db.Exec(`ALTER TABLE recurring_transactions ADD COLUMN notes TEXT`)
+	}
+
+	// Create tables (with CREATE TABLE IF NOT EXISTS)
 	schema := `
 	CREATE TABLE IF NOT EXISTS funds (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,7 +102,7 @@ func EnsureTables(db *sql.DB) error {
 		FOREIGN KEY (fund_id) REFERENCES funds(id) ON DELETE CASCADE
 	);
 
-	CREATE TABLE IF NOT EXISTS subscriptions (
+	CREATE TABLE IF NOT EXISTS recurring_transactions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		fund_id INTEGER NOT NULL,
 		currency TEXT NOT NULL,
@@ -92,11 +112,13 @@ func EnsureTables(db *sql.DB) error {
 		last_charged TEXT,
 		next_billing TEXT NOT NULL,
 		status TEXT NOT NULL DEFAULT 'active',
+		category TEXT,
+		notes TEXT,
 		FOREIGN KEY (fund_id) REFERENCES funds(id) ON DELETE CASCADE
 	);
 	`
 
-	_, err := db.Exec(schema)
+	_, err = db.Exec(schema)
 	if err != nil {
 		return fmt.Errorf("failed to create tables: %w", err)
 	}

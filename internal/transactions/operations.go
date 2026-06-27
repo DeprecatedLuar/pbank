@@ -3,7 +3,6 @@ package transactions
 import (
 	"database/sql"
 	"fmt"
-	"time"
 )
 
 const (
@@ -18,7 +17,7 @@ const (
 	fieldDate     = "date"
 )
 
-func AddMoney(db *sql.DB, fundLabel, currency string, amount float64, title, category, notes string) error {
+func AddMoney(db *sql.DB, fundLabel, currency string, amount float64, title, category, notes, date string) error {
 	var fundID int
 	err := db.QueryRow("SELECT id FROM funds WHERE label = ?", fundLabel).Scan(&fundID)
 	if err == sql.ErrNoRows {
@@ -42,7 +41,6 @@ func AddMoney(db *sql.DB, fundLabel, currency string, amount float64, title, cat
 		return err
 	}
 
-	date := time.Now().Format(dateFormat)
 	_, err = tx.Exec(`
 		INSERT INTO transactions (fund_id, currency, date, title, amount, category, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?)

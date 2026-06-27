@@ -6,6 +6,7 @@ import (
 
 	"github.com/DeprecatedLuar/pbank/internal/commands"
 	"github.com/DeprecatedLuar/pbank/internal/db"
+	"github.com/DeprecatedLuar/pbank/internal/selfheal"
 )
 
 // Exit codes
@@ -23,14 +24,15 @@ const (
 
 // Command names
 const (
-	cmdHelp     = "help"
-	cmdFund     = "fund"
-	cmdAdd      = "add"
-	cmdDeduct   = "deduct"
-	cmdList     = "history"
-	cmdEdit     = "edit"
-	cmdBalance  = "balance"
-	cmdNetworth = "networth"
+	cmdHelp      = "help"
+	cmdFund      = "fund"
+	cmdAdd       = "add"
+	cmdDeduct    = "deduct"
+	cmdList      = "history"
+	cmdEdit      = "edit"
+	cmdBalance   = "balance"
+	cmdNetworth  = "networth"
+	cmdRecurring = "recurring"
 )
 
 // Help flags
@@ -64,6 +66,12 @@ func Run(args []string) int {
 	if err := db.EnsureTables(database); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return exitError
+	}
+
+	// Self-healing: process recurring transactions
+	if err := selfheal.Run(database); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: self-heal failed: %v\n", err)
+		// Non-fatal - continue to command execution
 	}
 
 	switch cmd {
@@ -103,6 +111,15 @@ func Run(args []string) int {
 		}
 	case cmdNetworth:
 		if err := commands.HandleNetworth(database, args[argsOffset:]); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return exitError
+		}
+	case cmdRecurring:
+		if len(args) < minArgs+1 {
+			commands.HandleHelp([]string{cmdHelp, cmdRecurring})
+			return exitError
+		}
+		if err := commands.HandleRecurring(database, args[argsOffset:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			return exitError
 		}

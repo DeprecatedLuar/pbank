@@ -22,7 +22,7 @@ func buildHelp() (*gohelp.Page, []*gohelp.Page) {
 			gohelp.Item("help --all", "Show all help topics at once"),
 		).
 		Text("All commands support multi-currency tracking. Currencies are stored as 3-letter codes (USD, EUR, BTC, etc.).").
-		Text("Data is stored in finances.db (SQLite) in the current directory.").
+		Text("Data is stored in finances.db (SQLite) at $PBANK_HOME or $XDG_DATA_HOME/pbank or ~/.local/share/pbank (default).").
 		Text("Recurring transactions are processed automatically on every pbank invocation.")
 
 	fund := gohelp.NewPage("fund", "manage funds (accounts, wallets, savings, etc.)").

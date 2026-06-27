@@ -11,6 +11,9 @@ interfaces = ["telegram", "cli"]
 [memory]
 max_messages = 10
 
+[environment]
+PBANK_HOME = "{{$agentpath}}/.data/tools/pbank"
+
 # [audio]
 # provider = "whisper"  # or http://localhost:9000/v1 for local whisper server
 # model = "whisper-1"

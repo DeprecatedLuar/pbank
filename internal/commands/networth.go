@@ -13,9 +13,10 @@ import (
 
 // API configuration
 const (
-	coinGeckoAPIURL = "https://api.coingecko.com/api/v3/simple/price?ids=%s&vs_currencies=%s"
-	awesomeAPIURL   = "https://economia.awesomeapi.com.br/json/last/%s"
-	httpStatusOK    = 200
+	coinGeckoAPIURL   = "https://api.coingecko.com/api/v3/simple/price?ids=%s&vs_currencies=%s"
+	awesomeAPIURL     = "https://economia.awesomeapi.com.br/json/last/%s"
+	frankfurterAPIURL = "https://api.frankfurter.app/latest?from=%s&to=%s"
+	httpStatusOK      = 200
 )
 
 // Display formatting
@@ -120,11 +121,18 @@ func HandleNetworth(db *sql.DB, args []string) error {
 	}
 
 	fiatRates := make(map[string]float64)
+	usedFallback := false
 	if len(fiatCurrencies) > 0 {
 		var err error
 		fiatRates, err = fetchFiatRates(fiatCurrencies, targetCurrency)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: fiat rates fetch failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Warning: awesomeapi failed (%v), trying fallback...\n", err)
+			fiatRates, err = fetchFiatRatesFrankfurter(fiatCurrencies, targetCurrency)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: frankfurter fallback also failed: %v\n", err)
+			} else {
+				usedFallback = true
+			}
 		}
 	}
 
@@ -158,7 +166,11 @@ func HandleNetworth(db *sql.DB, args []string) error {
 	}
 
 	fmt.Fprintln(w, "----\t--------\t------\t---------")
-	fmt.Fprintf(w, "Total\t\t\t"+decimalFormat+" %s\n", total, targetCurrency)
+	totalPrefix := ""
+	if usedFallback {
+		totalPrefix = "~"
+	}
+	fmt.Fprintf(w, "Total\t\t\t"+totalPrefix+decimalFormat+" %s\n", total, targetCurrency)
 	w.Flush()
 
 	return nil
@@ -252,6 +264,47 @@ func fetchFiatRates(currencies map[string]bool, targetCurrency string) (map[stri
 				rates[curr] = rate
 			}
 		}
+	}
+
+	return rates, nil
+}
+
+func fetchFiatRatesFrankfurter(currencies map[string]bool, targetCurrency string) (map[string]float64, error) {
+	rates := make(map[string]float64)
+
+	for curr := range currencies {
+		url := fmt.Sprintf(frankfurterAPIURL, curr, targetCurrency)
+
+		resp, err := http.Get(url)
+		if err != nil {
+			continue
+		}
+
+		if resp.StatusCode != httpStatusOK {
+			resp.Body.Close()
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			continue
+		}
+
+		var data struct {
+			Rates map[string]float64 `json:"rates"`
+		}
+		if err := json.Unmarshal(body, &data); err != nil {
+			continue
+		}
+
+		if rate, ok := data.Rates[targetCurrency]; ok {
+			rates[curr] = rate
+		}
+	}
+
+	if len(rates) == 0 {
+		return nil, fmt.Errorf("no rates fetched")
 	}
 
 	return rates, nil

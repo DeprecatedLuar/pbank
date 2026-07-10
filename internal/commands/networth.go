@@ -126,10 +126,9 @@ func HandleNetworth(db *sql.DB, args []string) error {
 		var err error
 		fiatRates, err = fetchFiatRates(fiatCurrencies, targetCurrency)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: awesomeapi failed (%v), trying fallback...\n", err)
 			fiatRates, err = fetchFiatRatesFrankfurter(fiatCurrencies, targetCurrency)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: frankfurter fallback also failed: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Warning: fiat rates fetch failed (both APIs): %v\n", err)
 			} else {
 				usedFallback = true
 			}

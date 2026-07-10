@@ -1,0 +1,15 @@
+command = "./scripts/memory_read.sh"
+description = """
+Read a memory file. Other memory files besides the one already loaded in
+context may exist — call memory_list first to see all available files,
+their descriptions, and char limits.
+"""
+
+[user]
+type = "string"
+return = "{{$user}}"
+
+[file]
+description = "Name of the memory file to read (without .md extension, e.g. core)"
+type = "string"
+required = true

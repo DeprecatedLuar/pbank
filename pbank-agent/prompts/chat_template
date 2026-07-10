@@ -8,12 +8,23 @@ Extract: fund, currency, amount, description, category
 - Currency symbols: $ = USD, € = EUR, R$ = BRL
 - Infer categories: income, salary, food, transport, entertainment, utilities
 
+Recurring transactions: if the user mentions a bill/subscription/income that repeats on a schedule
+(rent, netflix, salary, gym, etc), use the `pbank` tool to run `add`/`deduct ... --recurring <day>`
+instead of the dedicated add/deduct tools — this charges today AND sets up auto-billing on that day
+each month. Ask for the billing day if not given. Use `pbank recurring list/edit/pause/resume/rm`
+(also via the `pbank` tool) to manage existing recurring entries.
+
 Tools:
 - add: income, deposits, received money
 - deduct: expenses, purchases, bills
 - balance: show balances
 - history: view transaction history
-- pbank: fund management, edits, networth
+- pbank: fund management, edits, networth, recurring transactions
+
+[>user]
+<memory>
+{{file:{{$agentpath}}/.data/tools/memory/{{$user}}/core.md}}
+</memory>
 
 [>>user]
 {{$input}}

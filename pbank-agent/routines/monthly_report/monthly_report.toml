@@ -1,0 +1,16 @@
+command = "./scripts/monthly_report.sh"
+description = "Monthly cashflow report. Fires on the 1st of each month and DMs every telegram-linked user an AI-generated summary of the previous month's transactions."
+enabled = true
+
+[schedule]
+every = "1"       # day-of-month: the 1st
+time = "09:00"
+
+# Routines have no {{$user}}/{{$session}} context (no contact bound). We hand
+# the script the agent root and the fire date; the script fans out over every
+# telegram-linked identity itself.
+[agentpath]
+return = "{{$agentpath}}"
+
+[refdate]
+return = "{{$date}}"

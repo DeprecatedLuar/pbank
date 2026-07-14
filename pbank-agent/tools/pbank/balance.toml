@@ -1,5 +1,6 @@
 command = "pbank balance"
 description = "Show current balances for all funds"
+report = "check balance"
 
 [pbank_home]
 type = "string"

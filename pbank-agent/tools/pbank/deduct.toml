@@ -1,5 +1,6 @@
 command = "pbank deduct {{fund}} {{currency}} {{amount}} '{{title}}' --category {{category}}"
 description = "Deduct money from a fund (expenses, purchases, bills)"
+report = "deducted {{amount}} from {{fund}}"
 
 [pbank_home]
 type = "string"

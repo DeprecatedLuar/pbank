@@ -1,5 +1,6 @@
 command = "pbank history {{fund}} {{currency}} {{since}} {{category}} {{limit}}"
 description = "Show transaction history with optional filters"
+report = "check history"
 
 [pbank_home]
 type = "string"

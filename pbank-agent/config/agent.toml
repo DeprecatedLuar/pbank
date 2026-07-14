@@ -1,6 +1,6 @@
 [agent]
 provider = "openrouter"
-model = "deepseek/deepseek-v4-flash"
+model = "openai/gpt-oss-20b:free"
 tools = []
 logging = false  # false | true | "debug"
 

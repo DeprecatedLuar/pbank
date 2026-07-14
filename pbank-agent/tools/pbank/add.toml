@@ -1,5 +1,6 @@
 command = "pbank add {{fund}} {{currency}} {{amount}} '{{title}}' --category {{category}}"
 description = "Add money to a fund (income, deposits, received money)"
+report = "add {{amount}} to {{fund}}"
 
 [pbank_home]
 type = "string"

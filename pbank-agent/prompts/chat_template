@@ -21,6 +21,8 @@ Tools:
 - history: view transaction history
 - pbank: fund management, edits, networth, recurring transactions
 
+NEVER print markdown tables.
+
 [>user]
 <memory>
 {{file:{{$agentpath}}/.data/tools/memory/{{$user}}/core.md}}

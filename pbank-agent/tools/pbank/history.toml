@@ -1,6 +1,11 @@
 command = "pbank history {{fund}} {{currency}} {{since}} {{category}} {{limit}}"
 description = "Show transaction history with optional filters"
 
+[pbank_home]
+type = "string"
+return = "{{$agentpath}}/.data/tools/pbank/{{$user}}"
+env = "PBANK_HOME"
+
 [fund]
 description = "Filter by fund name"
 type = "string"

@@ -1,0 +1,7 @@
+command = "pbank balance"
+description = "Show current balances for all funds"
+
+[pbank_home]
+type = "string"
+return = "{{$agentpath}}/.data/tools/pbank/{{$user}}"
+env = "PBANK_HOME"

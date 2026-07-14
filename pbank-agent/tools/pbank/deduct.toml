@@ -1,6 +1,11 @@
 command = "pbank deduct {{fund}} {{currency}} {{amount}} '{{title}}' --category {{category}}"
 description = "Deduct money from a fund (expenses, purchases, bills)"
 
+[pbank_home]
+type = "string"
+return = "{{$agentpath}}/.data/tools/pbank/{{$user}}"
+env = "PBANK_HOME"
+
 [fund]
 description = "Fund name"
 type = "string"

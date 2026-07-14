@@ -1,5 +1,10 @@
-command = "pbank {{args}}"
+command = "pbank $TOOL_ARGS"
 description = "Run any pbank command (fund management, edit, networth). Use 'help <topic>' to learn command syntax."
+
+[pbank_home]
+type = "string"
+return = "{{$agentpath}}/.data/tools/pbank/{{$user}}"
+env = "PBANK_HOME"
 
 [args]
 description = "Command with arguments (e.g., 'fund list', 'edit 5 amount 100', 'networth USD')"

@@ -1,6 +1,11 @@
 command = "pbank add {{fund}} {{currency}} {{amount}} '{{title}}' --category {{category}}"
 description = "Add money to a fund (income, deposits, received money)"
 
+[pbank_home]
+type = "string"
+return = "{{$agentpath}}/.data/tools/pbank/{{$user}}"
+env = "PBANK_HOME"
+
 [fund]
 description = "Fund name"
 type = "string"

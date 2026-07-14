@@ -1,4 +1,4 @@
-command = "pbank $TOOL_ARGS"
+command = "pbank {{args}}"
 description = "Run any pbank command (fund management, edit, networth). Use 'help <topic>' to learn command syntax."
 
 [pbank_home]
